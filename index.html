@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Controle de Ferramentas – Dashboard</title>
+<style>
+  :root{
+    --primary:#0b63d6;
+    --primary-dark:#064a9d;
+    --success:#28a745;
+    --bg:#f4f7fb;
+    --card:#ffffff;
+    --muted:#6b7280;
+    --shadow: 0 8px 30px rgba(9,30,66,0.08);
+    --glass: rgba(255,255,255,0.6);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Inter, "Segoe UI", Roboto, Arial, sans-serif;
+    background: linear-gradient(180deg,var(--bg),#eef4fb 60%);
+    color:#0f1724;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* Container */
+  .wrap{max-width:1300px;margin:28px auto;padding:20px;}
+
+  /* Login */
+  .login {
+    max-width:420px;margin:80px auto;padding:28px;background:var(--card);border-radius:12px;
+    box-shadow:var(--shadow);text-align:center;
+  }
+  .login h2{margin:0 0 12px;font-size:22px;color:var(--primary)}
+  .login input{
+    width:100%;padding:12px;margin:10px 0;border:1px solid #e1e6ef;border-radius:10px;font-size:15px;
+  }
+  .btn{
+    display:inline-block;padding:11px 16px;border-radius:10px;border:none;font-weight:700;cursor:pointer;
+  }
+  .btn-primary{background:var(--primary);color:white;box-shadow:0 6px 18px rgba(11,99,214,0.18)}
+  .btn-primary:hover{background:var(--primary-dark)}
+  .muted{color:var(--muted);font-size:13px;margin-top:8px}
+
+  /* Dashboard */
+  .header{
+    background:linear-gradient(90deg,var(--primary),var(--primary-dark));
+    color:white;padding:18px;border-radius:12px;margin-bottom:18px;box-shadow:var(--shadow);
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+  }
+  .header h1{font-size:20px;margin:0}
+  .controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .search {
+    flex:1;min-width:240px;padding:12px;border-radius:10px;border:1px solid #e1e6ef;background:var(--card);
+    font-size:15px;
+  }
+  .action-btn{padding:10px 14px;border-radius:10px;border:none;font-weight:700;cursor:pointer}
+  .btn-green{background:var(--success);color:white;box-shadow:0 6px 18px rgba(40,167,69,0.12)}
+  .btn-add{background:var(--primary);color:white}
+  .btn-warning{background:#f59e0b;color:white}
+
+  .panel{
+    background:var(--card);padding:18px;border-radius:12px;box-shadow:var(--shadow);
+  }
+
+  .add-box{display:none;margin-bottom:14px;padding:14px;border-radius:10px;background:linear-gradient(180deg,#fff,#fbfdff);border:1px solid #eef3fb}
+  .add-box input{width:100%;padding:10px;margin:8px 0;border-radius:8px;border:1px solid #e1e6ef}
+
+  table{width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden;margin-top:8px}
+  th,td{padding:12px 10px;border-bottom:1px solid #eef2f7;text-align:left;font-size:14px}
+  th{background:#f7fafc;color:#55607a;font-weight:700}
+  tr:hover td{background:#fbfdff}
+  td[contenteditable="true"]{background:linear-gradient(90deg,#fff,#fbfdff)}
+  .small{font-size:13px;color:var(--muted)}
+
+  .footer{margin-top:12px;color:var(--muted);font-size:13px;text-align:right}
+
+  /* responsive */
+  @media (max-width:900px){
+    .header{flex-direction:column;align-items:stretch}
+    .controls{width:100%}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- LOGIN -->
+  <div id="loginBox" class="login" >
+    <h2>Entrar - Sistema de Inventário</h2>
+    <input id="email" type="email" placeholder="Usuário (ex: Fernando@flapa)" />
+    <input id="senha" type="password" placeholder="Senha" />
+    <div style="display:flex;gap:10px;margin-top:12px;justify-content:center">
+      <button class="btn btn-primary" onclick="login()">Entrar</button>
+    </div>
+    <p id="loginErro" class="muted"></p>
+    <p class="muted">Usuário: <b>Fernando@flapa</b> — Senha: <b>flapa@2025</b></p>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard" style="display:none">
+
+    <div class="header">
+      <h1>Controle de Ferramentas – Oficina</h1>
+      <div class="controls">
+        <input id="buscar" class="search" placeholder="Buscar item..." oninput="buscarItem()" />
+        <button class="action-btn btn-add" onclick="toggleAdd()">+ Adicionar Peça</button>
+        <button class="action-btn btn-warning" onclick="devolverSelecionados()">Marcar como devolvido</button>
+        <button class="action-btn btn-green" onclick="salvar()">Salvar</button>
+      </div>
+    </div>
+
+    <div class="panel">
+
+      <div id="addBox" class="add-box">
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <input id="novoItem" placeholder="Nome da ferramenta" />
+          <input id="novaQtd" type="number" placeholder="Quantidade" style="width:140px" />
+        </div>
+        <div style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end">
+          <button class="action-btn btn-add" onclick="adicionarItem()">Adicionar</button>
+          <button class="action-btn" onclick="toggleAdd()">Cancelar</button>
+        </div>
+      </div>
+
+      <table id="tabela" aria-label="Inventário de ferramentas">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Quantidade</th>
+            <th>Emprestado?</th>
+            <th>Para quem?</th>
+            <th class="small">Devolvido?</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <div class="footer">Sistema local (salva no navegador). Para backup: exporte os dados manualmente copiando o inventário salvo.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* credenciais */
+const USR = "Fernando@flapa";
+const PWD = "flapa@2025";
+
+/* login */
+function login(){
+  const e = document.getElementById('email').value.trim();
+  const s = document.getElementById('senha').value;
+  const err = document.getElementById('loginErro');
+  if(e === USR && s === PWD){
+    document.getElementById('loginBox').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    carregarTabela();
+    err.innerText = '';
+  } else {
+    err.innerText = 'Usuário ou senha incorretos.';
+  }
+}
+
+/* DADOS INICIAIS - lista completa fornecida */
+let itens = [
+  ["SACA POLIA COMPLETO",1,"Não",""],
+  ["PARAFUSADEIRA ELETRICA 1/2",1,"Não",""],
+  ["SUBITO",1,"Não",""],
+  ["KIT CARGA DE NITROGENIO",1,"Não",""],
+  ["ET CATERPILLAR",1,"Não",""],
+  ["TESTADOR DE BATERIA",1,"Não",""],
+  ["ENCOLHEDOR DE MOLAS",1,"Não",""],
+  ["BASE MAGNETICA",3,"Não",""],
+  ["BOMBA DE VACUO",2,"Não",""],
+  ["BASE DE RELOGIO COMPARADOR",1,"Não",""],
+  ["GABARITO DE SERVO DE EMBREAGEM",1,"Não",""],
+  ["MEDIDOR DE ÂNGULO DE GRAU",1,"Não",""],
+  ["BALANÇA DIGITAL",1,"Não",""],
+  ["TRANSFERIDOR DE GRAU",1,"Não",""],
+  ["DECIMETRO",1,"Não",""],
+  ["PARAFUSADEIRA ELETRICA",1,"Não",""],
+  ["BATERIA RESERVA FURADEIRA",2,"Não",""],
+  ["CARREGADOR DE BATERIA DA PARAFUSADEIRA",1,"Não",""],
+  ["MICROMETRO",2,"Não",""],
+  ["TACOMETRO",1,"Não",""],
+  ["MEDIDOR DE INJETOR",1,"Não",""],
+  ["TRANSFERIDOR",1,"Não",""],
+  ["REGUA DE NIVEL",1,"Não",""],
+  ["RELOGIO COMPARADOR",1,"Não",""],
+  ["BOMBA DE GRAXA MANUAL",3,"Não",""],
+  ["MULTIPLICADOR DE TORQUE",1,"Não",""],
+  ["TORQUIMETRO",12,"Não",""],
+  ["CHAVE DE GRIFO",2,"Não",""],
+  ["MANOMETRO DIGITAL",1,"Não",""],
+  ["TERMOFUSORA",1,"Não",""],
+  ["ESCALA COM GANCHO",1,"Não",""],
+  ["CHAVE SEXTAAVADA MANUAL",1,"Não",""],
+  ["EXTRATOR PNEUMATICO VOLVO",1,"Não",""],
+  ["MARRETA DE BRONZE",1,"Não",""],
+  ["JOGO SOQUETE 3/4",1,"Não",""],
+  ["SANGRIA DE FREIO ELETRICO",1,"Não",""],
+  ["GABARITO DE FREIO VOLVO",1,"Não",""],
+  ["CHAVE DE CORTAR FILTRO",2,"Não",""],
+  ["ANILHA 1 POLEGADA DE 3/4",1,"Não",""],
+  ["ILHOS DE 6 TONELADAS",2,"Não",""],
+  ["ILHOS DE 4 TONELADAS",2,"Não",""],
+  ["VENTOSA",1,"Não",""],
+  ["SACA ROLAMENTO UNIVERSAL",1,"Não",""],
+  ["EXTRATOR DE PINO DE DIREÇÃO",3,"Não",""],
+  ["SACA POLIA DE 3 GARRAS",2,"Não",""],
+  ["SACA POLIA DE 2 GARRAS",1,"Não",""],
+  ["CHAVE DE PORCA REDONDA",1,"Não",""],
+  ["CHAVE OITAVADA 80MM",1,"Não",""],
+  ["SOQUETE SEXTAVADO 100MM",1,"Não",""],
+  ["SOQUETE OITAVADO 115MM",1,"Não",""],
+  ["COCINETE",1,"Não",""],
+  ["PILOTO GUIA",1,"Não",""],
+  ["SOQUETE PARA PORCA CASTELA",1,"Não",""],
+  ["CHAVE PORCA DE CUBO MERCED BENZ",1,"Não",""],
+  ["PINHAO DE GIRAR MOTOR",3,"Não",""],
+  ["SOQUETE DE IMPACTO 41",1,"Não",""],
+  ["SOQUETE DE IMPACTO 34",1,"Não",""],
+  ["SOQUETE DE IMPACTO 38",1,"Não",""],
+  ["SOQUETE DE IMPACTO 33",1,"Não",""],
+  ["ALICATE DE TRAVA",6,"Não",""],
+  ["TURQUEZA",1,"Não",""],
+  ["CHAVE DE CABINE VOLVO",1,"Não",""],
+  ["SOQUETE 28MM",1,"Não",""],
+  ["ALICATE DE ANEL DE PISTAO",1,"Não",""],
+  ["COMPASSO",1,"Não",""],
+  ["KIT MANOMETRO",1,"Não",""],
+  ["ALICATE DE CRIMPAR",1,"Não",""],
+  ["MARTELO DE BORRACHA",1,"Não",""],
+  ["RETIFICA PNEUMATICA",2,"Não",""],
+  ["FURADEIRA DE BATERIA",1,"Não",""],
+  ["KIT DE LIXAGEM ROTATIVA",1,"Não",""],
+  ["JOGO DE SOQUETE DE 1/2",1,"Não",""],
+  ["PARAFUSADEIRA ELETRICA DE 3/4",2,"Não",""],
+  ["TESTE RADIADOR",1,"Não",""],
+  ["INFRARED",4,"Não",""],
+  ["PRENSA CABO",1,"Não",""],
+  ["VAZADOR",1,"Não",""],
+  ["REBITADOR",1,"Não",""],
+  ["ESMIRILHADEIRA",1,"Não",""],
+  ["CINTA DE ANEL DE PISTAO",1,"Não",""],
+  ["MANGUEIRA DE DRENO",1,"Não",""],
+  ["SERROTE",1,"Não",""],
+  ["DENSADOR UNIVERSAL",1,"Não",""]
+];
+
+/* carregar do localStorage se existir */
+function carregarTabela(){
+  const salvo = localStorage.getItem('inventarioFerramentas');
+  if(salvo){
+    try{
+      itens = JSON.parse(salvo);
+    }catch(e){
+      console.warn('Erro ao parsear inventário salvo', e);
+    }
+  }
+  montarTabela();
+}
+
+/* montar tabela */
+function montarTabela(){
+  const tbody = document.querySelector('#tabela tbody');
+  tbody.innerHTML = '';
+  itens.forEach((linha, idx) => {
+    const tr = document.createElement('tr');
+
+    // item
+    const tdItem = document.createElement('td');
+    tdItem.contentEditable = true;
+    tdItem.innerText = linha[0];
+    tdItem.addEventListener('input', ()=> itens[idx][0]=tdItem.innerText);
+    tr.appendChild(tdItem);
+
+    // qtd
+    const tdQtd = document.createElement('td');
+    tdQtd.contentEditable = true;
+    tdQtd.innerText = linha[1];
+    tdQtd.addEventListener('input', ()=> {
+      const v = parseInt(tdQtd.innerText.replace(/\D/g,'')) || 0;
+      itens[idx][1] = v;
+      tdQtd.innerText = v;
+    });
+    tr.appendChild(tdQtd);
+
+    // emprestado?
+    const tdEmp = document.createElement('td');
+    tdEmp.contentEditable = true;
+    tdEmp.innerText = linha[2] || "Não";
+    tdEmp.addEventListener('input', ()=> itens[idx][2]=tdEmp.innerText);
+    tr.appendChild(tdEmp);
+
+    // para quem
+    const tdPara = document.createElement('td');
+    tdPara.contentEditable = true;
+    tdPara.innerText = linha[3] || "";
+    tdPara.addEventListener('input', ()=> itens[idx][3]=tdPara.innerText);
+    tr.appendChild(tdPara);
+
+    // selecionar checkbox
+    const tdSel = document.createElement('td');
+    tdSel.style.textAlign = 'center';
+    const chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.dataset.id = idx;
+    tdSel.appendChild(chk);
+    tr.appendChild(tdSel);
+
+    tbody.appendChild(tr);
+  });
+}
+
+/* salvar no localStorage */
+function salvar(){
+  localStorage.setItem('inventarioFerramentas', JSON.stringify(itens));
+  alert('Inventário salvo com sucesso!');
+}
+
+/* buscar por item (filtra pelas células) */
+function buscarItem(){
+  const q = (document.getElementById('buscar').value || '').toLowerCase().trim();
+  const linhas = document.querySelectorAll('#tabela tbody tr');
+  linhas.forEach(tr=>{
+    const text = tr.innerText.toLowerCase();
+    tr.style.display = text.includes(q) ? '' : 'none';
+  });
+}
+
+/* toggle add form */
+function toggleAdd(){
+  const box = document.getElementById('addBox');
+  box.style.display = box.style.display === 'block' ? 'none' : 'block';
+  if(box.style.display === 'block'){
+    document.getElementById('novoItem').focus();
+  }
+}
+
+/* adicionar item novo */
+function adicionarItem(){
+  const nome = (document.getElementById('novoItem').value || '').trim();
+  const qtd = parseInt(document.getElementById('novaQtd').value) || 1;
+  if(!nome){
+    alert('Preencha o nome da ferramenta.');
+    return;
+  }
+  itens.push([nome,qtd,"Não",""]);
+  montarTabela();
+  salvar();
+  document.getElementById('novoItem').value = '';
+  document.getElementById('novaQtd').value = '';
+  toggleAdd();
+}
+
+/* marcar como devolvido (limpa campos emprestado/para quem) para itens selecionados */
+function devolverSelecionados(){
+  const checks = document.querySelectorAll('#tabela tbody input[type="checkbox"]:checked');
+  if(checks.length === 0){
+    alert('Selecione ao menos um item para marcar como devolvido.');
+    return;
+  }
+  checks.forEach(c=>{
+    const id = parseInt(c.dataset.id,10);
+    if(!isNaN(id) && itens[id]){
+      itens[id][2] = "Não";
+      itens[id][3] = "";
+    }
+  });
+  montarTabela();
+  salvar();
+  alert('Itens marcados como devolvidos!');
+}
+
+/* inicializa campos do formulário de adicionar dinamicamente no DOM */
+(function initAddForm(){
+  const container = document.getElementById('addBox');
+  container.innerHTML = `
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <input id="novoItem" placeholder="Nome da ferramenta" />
+      <input id="novaQtd" type="number" placeholder="Quantidade" style="width:140px" />
+    </div>
+    <div style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="action-btn btn-add" onclick="adicionarItem()">Adicionar</button>
+      <button class="action-btn" onclick="toggleAdd()">Cancelar</button>
+    </div>
+  `;
+})();
+
+/* garantir que, se estiver logado antes, carregar dashboard (opcional) */
+window.addEventListener('DOMContentLoaded',()=>{
+  // nada por enquanto - espera login
+});
+</script>
+</body>
+</html>
