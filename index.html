@@ -3,7 +3,11 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Controle de Ferramentas – Dashboard</title>
+<title>Controle de Ferramentas – Dashboard + Colaboradores (Excel)</title>
+
+<!-- SheetJS (Excel) -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
 <style>
   :root{
     --primary:#0b63d6;
@@ -13,7 +17,7 @@
     --card:#ffffff;
     --muted:#6b7280;
     --shadow: 0 8px 30px rgba(9,30,66,0.08);
-    --glass: rgba(255,255,255,0.6);
+    --danger:#ef4444;
   }
   *{box-sizing:border-box}
   body{
@@ -21,13 +25,14 @@
     font-family:Inter, "Segoe UI", Roboto, Arial, sans-serif;
     background: linear-gradient(180deg,var(--bg),#eef4fb 60%);
     color:#0f1724;
-    -webkit-font-smoothing:antialiased;
+    display:flex;
+    justify-content:center;
+    min-height:100vh;
   }
 
-  /* Container */
-  .wrap{max-width:1300px;margin:28px auto;padding:20px;}
+  .wrap{width:1200px;margin:28px auto;padding:20px;}
 
-  /* Login */
+  /* LOGIN */
   .login {
     max-width:420px;margin:80px auto;padding:28px;background:var(--card);border-radius:12px;
     box-shadow:var(--shadow);text-align:center;
@@ -36,50 +41,62 @@
   .login input{
     width:100%;padding:12px;margin:10px 0;border:1px solid #e1e6ef;border-radius:10px;font-size:15px;
   }
-  .btn{
-    display:inline-block;padding:11px 16px;border-radius:10px;border:none;font-weight:700;cursor:pointer;
-  }
-  .btn-primary{background:var(--primary);color:white;box-shadow:0 6px 18px rgba(11,99,214,0.18)}
-  .btn-primary:hover{background:var(--primary-dark)}
+  .btn{padding:11px 16px;border-radius:10px;border:none;font-weight:700;cursor:pointer}
+  .btn-primary{background:var(--primary);color:white}
   .muted{color:var(--muted);font-size:13px;margin-top:8px}
 
-  /* Dashboard */
+  /* LAYOUT PRINCIPAL */
+  .layout{display:flex;gap:20px}
+  .sidebar{width:260px;background:var(--card);padding:20px;border-radius:12px;box-shadow:var(--shadow);height:calc(100vh - 56px);position:sticky;top:20px}
+  .sidebar h3{margin-top:0;color:var(--primary);font-size:18px}
+  .sidebar button{width:100%;padding:12px;margin-top:10px;border:none;border-radius:10px;font-weight:700;cursor:pointer;background:var(--primary);color:white}
+
+  .content{flex:1}
+
   .header{
     background:linear-gradient(90deg,var(--primary),var(--primary-dark));
     color:white;padding:18px;border-radius:12px;margin-bottom:18px;box-shadow:var(--shadow);
     display:flex;align-items:center;justify-content:space-between;gap:12px;
   }
-  .header h1{font-size:20px;margin:0}
   .controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
   .search {
     flex:1;min-width:240px;padding:12px;border-radius:10px;border:1px solid #e1e6ef;background:var(--card);
     font-size:15px;
   }
   .action-btn{padding:10px 14px;border-radius:10px;border:none;font-weight:700;cursor:pointer}
-  .btn-green{background:var(--success);color:white;box-shadow:0 6px 18px rgba(40,167,69,0.12)}
+  .btn-green{background:var(--success);color:white}
   .btn-add{background:var(--primary);color:white}
   .btn-warning{background:#f59e0b;color:white}
 
-  .panel{
-    background:var(--card);padding:18px;border-radius:12px;box-shadow:var(--shadow);
-  }
-
-  .add-box{display:none;margin-bottom:14px;padding:14px;border-radius:10px;background:linear-gradient(180deg,#fff,#fbfdff);border:1px solid #eef3fb}
-  .add-box input{width:100%;padding:10px;margin:8px 0;border-radius:8px;border:1px solid #e1e6ef}
+  .panel{background:var(--card);padding:18px;border-radius:12px;box-shadow:var(--shadow);}
 
   table{width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden;margin-top:8px}
-  th,td{padding:12px 10px;border-bottom:1px solid #eef2f7;text-align:left;font-size:14px}
+  th,td{padding:12px 10px;border-bottom:1px solid #eef2f7;text-align:left;font-size:14px;vertical-align:middle}
   th{background:#f7fafc;color:#55607a;font-weight:700}
-  tr:hover td{background:#fbfdff}
-  td[contenteditable="true"]{background:linear-gradient(90deg,#fff,#fbfdff)}
-  .small{font-size:13px;color:var(--muted)}
+  td[contenteditable="true"]{background:#fbfdff}
+  td.center{ text-align:center; }
 
   .footer{margin-top:12px;color:var(--muted);font-size:13px;text-align:right}
 
+  /* COLABORADORES */
+  #colaboradoresBox{display:none;max-height:70vh;overflow:auto}
+  #colaboradoresBox input{width:100%;padding:12px;margin:10px 0;border:1px solid #e1e6ef;border-radius:10px;font-size:15px}
+  .col-item{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid #edf1f7}
+  .col-item img{width:44px;height:44px;border-radius:8px;object-fit:cover;margin-right:12px}
+  .col-actions{margin-left:auto;display:flex;gap:8px}
+  .small-btn{padding:6px 8px;border-radius:8px;border:none;cursor:pointer}
+  .btn-danger{background:var(--danger);color:white}
+  .btn-muted{background:#e6eef6;color:#0f1724}
+
+  /* MODAL */
+  .modal-backdrop{position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.35);display:none;align-items:center;justify-content:center;z-index:60}
+  .modal{background:white;padding:18px;border-radius:12px;max-width:520px;width:92%;box-shadow:var(--shadow)}
+  .modal input, .modal select{width:100%;padding:10px;margin-top:8px;border-radius:8px;border:1px solid #e6edf6}
+
   /* responsive */
-  @media (max-width:900px){
-    .header{flex-direction:column;align-items:stretch}
-    .controls{width:100%}
+  @media(max-width:1000px){
+    .wrap{width:95%}
+    .sidebar{display:none}
   }
 </style>
 </head>
@@ -90,80 +107,145 @@
   <!-- LOGIN -->
   <div id="loginBox" class="login" >
     <h2>Entrar - Sistema de Inventário</h2>
-    <input id="email" type="email" placeholder="Usuário (ex: *****@flapa)" />
-    <input id="senha" type="password" placeholder="Senha" />
-    <div style="display:flex;gap:10px;margin-top:12px;justify-content:center">
-      <button class="btn btn-primary" onclick="login()">Entrar</button>
-    </div>
+    <input id="email" type="email" placeholder="Usuário" autocomplete="username" />
+    <input id="senha" type="password" placeholder="Senha" autocomplete="current-password" />
+    <button class="btn btn-primary" onclick="login()">Entrar</button>
     <p id="loginErro" class="muted"></p>
   </div>
 
   <!-- DASHBOARD -->
   <div id="dashboard" style="display:none">
 
-    <div class="header">
-      <h1>Controle de Ferramentas – Oficina</h1>
-      <div class="controls">
-        <input id="buscar" class="search" placeholder="Buscar item..." oninput="buscarItem()" />
-        <button class="action-btn btn-add" onclick="toggleAdd()">+ Adicionar Peça</button>
-        <button class="action-btn btn-warning" onclick="devolverSelecionados()">Marcar como devolvido</button>
-        <button class="action-btn btn-green" onclick="salvar()">Salvar</button>
-      </div>
-    </div>
+    <div class="layout">
 
-    <div class="panel">
+      <div class="sidebar">
+        <h3>Menu</h3>
+        <button onclick="abrirInventario()">Inventário</button>
+        <button onclick="abrirColaboradores()">Colaboradores</button>
 
-      <div id="addBox" class="add-box">
-        <div style="display:flex;gap:10px;flex-wrap:wrap">
-          <input id="novoItem" placeholder="Nome da ferramenta" />
-          <input id="novaQtd" type="number" placeholder="Quantidade" style="width:140px" />
+        <!-- Excel no menu (Option A texts as requested) -->
+        <button style="background:#6b7280;margin-top:12px" onclick="exportarExcel()">Exportar Itens (Excel)</button>
+        <button style="background:#6b7280;margin-top:8px" onclick="triggerImport()">Importar Itens (Excel)</button>
+
+        <div style="margin-top:18px" class="muted">
+          Abra "Colaboradores" para adicionar nome, foto e área. Eles aparecerão no campo "Para quem?".
         </div>
-        <div style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end">
-          <button class="action-btn btn-add" onclick="adicionarItem()">Adicionar</button>
-          <button class="action-btn" onclick="toggleAdd()">Cancelar</button>
+
+        <div style="margin-top:20px">
+          <button style="background:#e6eef6;color:#0f1724" onclick="exportarTudo()">Exportar tudo (JSON)</button>
+          <button style="margin-top:8px;background:#f59e0b;color:white" onclick="importarPrompt()">Importar itens (JSON)</button>
         </div>
       </div>
 
-      <table id="tabela" aria-label="Inventário de ferramentas">
-        <thead>
-          <tr>
-            <th>Item</th>
-            <th>Quantidade</th>
-            <th>Emprestado?</th>
-            <th>Para quem?</th>
-            <th class="small">Devolvido?</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+      <div class="content">
 
-      <div class="footer">Sistema local (salva no navegador). Para backup: exporte os dados manualmente copiando o inventário salvo.</div>
+        <div id="inventarioBox">
+          <div class="header">
+            <h1>Controle de Ferramentas – Oficina</h1>
+            <div class="controls">
+              <input id="buscar" class="search" placeholder="Buscar item..." oninput="buscarItem()" />
+              <button class="action-btn btn-add" onclick="abrirModalAdd()">+ Adicionar Peça</button>
+              <button class="action-btn btn-warning" onclick="devolverSelecionados()">Marcar como devolvido</button>
+              <button class="action-btn btn-green" onclick="salvar()">Salvar</button>
+            </div>
+          </div>
+
+          <div class="panel">
+            <table id="tabela">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Qtd</th>
+                  <th>Emprestado?</th>
+                  <th>Para quem?</th>
+                  <th>Data Empréstimo</th>
+                  <th>Data Devolução</th>
+                  <th>Devolvido?</th>
+                  <th>Excluir</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+
+            <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+              <button class="small-btn btn-muted" onclick="exportarExcel()">Exportar Itens (Excel)</button>
+              <button class="small-btn" onclick="triggerImport()">Importar Itens (Excel)</button>
+              <button class="small-btn" onclick="limparItens()" style="background:#f59e0b;color:white">Limpar Itens</button>
+            </div>
+
+            <div class="footer">Sistema local — tudo salvo no navegador.</div>
+          </div>
+        </div>
+
+        <!-- COLABORADORES -->
+        <div id="colaboradoresBox">
+          <div class="header" style="margin-bottom:10px">
+            <h2>Gerenciar Colaboradores</h2>
+          </div>
+
+          <div id="colabForm" class="panel" style="margin-bottom:12px">
+            <input id="colabNome" placeholder="Nome" />
+            <input id="colabArea" placeholder="Área (ex: Mecânica, Expedição)" />
+            <input id="colabFoto" type="file" accept="image/*" />
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-primary" onclick="salvarColaborador()">Salvar Colaborador</button>
+              <button class="btn" onclick="limparFormColab()">Limpar</button>
+            </div>
+          </div>
+
+          <div id="colaboradoresBoxInner" class="panel">
+            <h3>Lista de Colaboradores</h3>
+            <div id="colaboradoresLista"></div>
+
+            <div style="margin-top:12px;display:flex;gap:8px">
+              <button class="small-btn btn-muted" onclick="exportarColabs()">Exportar Colaboradores (JSON)</button>
+              <button class="small-btn" onclick="importarColabsPrompt()">Importar Colaboradores (JSON)</button>
+              <button class="small-btn btn-danger" onclick="limparColabs()">Limpar todos</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
   </div>
 
 </div>
 
+<!-- MODAL ADICIONAR PEÇA -->
+<div id="modal" class="modal-backdrop">
+  <div class="modal">
+    <h3>Adicionar Peça</h3>
+    <input id="inpItem" placeholder="Nome do item (ex: Chave 10mm)" />
+    <input id="inpQtd" placeholder="Quantidade" type="number" min="1" />
+    <label style="margin-top:8px;font-size:13px;color:var(--muted)">Emprestado?</label>
+    <select id="inpEmprestado">
+      <option>Não</option>
+      <option>Sim</option>
+    </select>
+    <label style="margin-top:8px;font-size:13px;color:var(--muted)">Para quem?</label>
+    <select id="inpParaQuem"><option value=""></option></select>
+
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-primary" onclick="adicionarPeça()">Adicionar</button>
+      <button class="btn" onclick="fecharModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden file input for Excel import -->
+<input id="importExcelFile" type="file" accept=".xlsx" style="display:none" />
 <script>
-/* credenciais */
+/* -----------------------
+   Config de login
+   ----------------------- */
 const USR = "Fernando@flapa";
 const PWD = "flapa@2025";
 
-/* login */
-function login(){
-  const e = document.getElementById('email').value.trim();
-  const s = document.getElementById('senha').value;
-  const err = document.getElementById('loginErro');
-  if(e === USR && s === PWD){
-    document.getElementById('loginBox').style.display = 'none';
-    document.getElementById('dashboard').style.display = 'block';
-    carregarTabela();
-    err.innerText = '';
-  } else {
-    err.innerText = 'Usuário ou senha incorretos.';
-  }
-}
-
-/* DADOS INICIAIS - lista completa fornecida */
+/* -----------------------
+   Bancos locais
+   - itens: array de arrays [nome,qtd,emprestado,paraquem,dataEmprestimo,dataDevolucao,devolvido]
+   - colaboradores: array de objetos {name,photo,area}
+   ----------------------- */
 let itens = [
   ["SACA POLIA COMPLETO",1,"Não",""],
   ["PARAFUSADEIRA ELETRICA 1/2",1,"Não",""],
@@ -249,151 +331,453 @@ let itens = [
   ["SERROTE",1,"Não",""],
   ["DENSADOR UNIVERSAL",1,"Não",""]
 ];
+let colaboradores = JSON.parse(localStorage.getItem("colaboradoresSistema") || "[]");
 
-/* carregar do localStorage se existir */
-function carregarTabela(){
-  const salvo = localStorage.getItem('inventarioFerramentas');
-  if(salvo){
-    try{
-      itens = JSON.parse(salvo);
-    }catch(e){
-      console.warn('Erro ao parsear inventário salvo', e);
-    }
+
+/* --------- LOGIN --------- */
+function login(){
+  const e = document.getElementById('email').value.trim();
+  const s = document.getElementById('senha').value;
+
+  // normaliza email (case-insensitive) and exact password
+  if (e.toLowerCase() === USR.toLowerCase() && s === PWD) {
+    document.getElementById('loginBox').style.display = "none";
+    document.getElementById('dashboard').style.display = "block";
+    abrirInventario();
+    carregarColaboradores();
+    carregarTabela();
+  } else {
+    document.getElementById('loginErro').innerText = "Usuário ou senha incorretos.";
   }
-  montarTabela();
 }
 
-/* montar tabela */
-function montarTabela(){
-  const tbody = document.querySelector('#tabela tbody');
-  tbody.innerHTML = '';
-  itens.forEach((linha, idx) => {
-    const tr = document.createElement('tr');
+/* --------- NAV (inventario / colaboradores) --------- */
+function abrirInventario(){ document.getElementById('inventarioBox').style.display = "block"; document.getElementById('colaboradoresBox').style.display = "none"; }
+function abrirColaboradores(){ document.getElementById('inventarioBox').style.display = "none"; document.getElementById('colaboradoresBox').style.display = "block"; carregarColaboradores(); }
 
-    // item
-    const tdItem = document.createElement('td');
-    tdItem.contentEditable = true;
-    tdItem.innerText = linha[0];
-    tdItem.addEventListener('input', ()=> itens[idx][0]=tdItem.innerText);
-    tr.appendChild(tdItem);
+/* -----------------------
+   INVENTÁRIO
+   ----------------------- */
 
-    // qtd
-    const tdQtd = document.createElement('td');
-    tdQtd.contentEditable = true;
-    tdQtd.innerText = linha[1];
-    tdQtd.addEventListener('input', ()=> {
-      const v = parseInt(tdQtd.innerText.replace(/\D/g,'')) || 0;
-      itens[idx][1] = v;
-      tdQtd.innerText = v;
-    });
-    tr.appendChild(tdQtd);
+function salvar(){
+  localStorage.setItem("inventarioFerramentas", JSON.stringify(itens));
+  alert("Itens salvos!");
+}
 
-    // emprestado?
-    const tdEmp = document.createElement('td');
-    tdEmp.contentEditable = true;
-    tdEmp.innerText = linha[2] || "Não";
-    tdEmp.addEventListener('input', ()=> itens[idx][2]=tdEmp.innerText);
-    tr.appendChild(tdEmp);
+function carregarTabela(){
+  const tbody = document.querySelector("#tabela tbody");
+  tbody.innerHTML = "";
 
-    // para quem
-    const tdPara = document.createElement('td');
-    tdPara.contentEditable = true;
-    tdPara.innerText = linha[3] || "";
-    tdPara.addEventListener('input', ()=> itens[idx][3]=tdPara.innerText);
-    tr.appendChild(tdPara);
+  itens.forEach((item, i) => {
+    // preenche opções de colaboradores no select
+    const options = colaboradores.map(c => `<option ${item[3] === c.name ? "selected" : ""}>${c.name}</option>`).join("");
 
-    // selecionar checkbox
-    const tdSel = document.createElement('td');
-    tdSel.style.textAlign = 'center';
-    const chk = document.createElement('input');
-    chk.type = 'checkbox';
-    chk.dataset.id = idx;
-    tdSel.appendChild(chk);
-    tr.appendChild(tdSel);
+    // garantir que item exista
+    const nome = item[0] ?? "";
+    const qtd  = item[1] ?? "";
+    const emprestado = item[2] ?? "Não";
+    const paraquem = item[3] ?? "";
+    const dataEmp = item[4] ?? "";
+    const dataDev = item[5] ?? "";
+    const devolvido = item[6] ?? "Não";
 
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td contenteditable="true" oninput="editar(${i},0,this.innerText)">${nome}</td>
+      <td contenteditable="true" oninput="editar(${i},1,this.innerText)">${qtd}</td>
+
+      <td>
+        <select onchange="trocarEmprestado(${i},this.value)">
+          <option ${emprestado=="Não"?"selected":""}>Não</option>
+          <option ${emprestado=="Sim"?"selected":""}>Sim</option>
+        </select>
+      </td>
+
+      <td>
+        <select onchange="editar(${i},3,this.value)">
+          <option value=""></option>
+          ${options}
+        </select>
+      </td>
+
+      <td contenteditable="true" oninput="editar(${i},4,this.innerText)">${dataEmp}</td>
+      <td contenteditable="true" oninput="editar(${i},5,this.innerText)">${dataDev}</td>
+
+      <td class="center">
+        <input type="checkbox" ${devolvido=="Sim"?"checked":""} onclick="marcarDevolvido(${i},this.checked)">
+      </td>
+
+      <td class="center" style="cursor:pointer;font-size:18px;color:var(--danger)" onclick="removerItem(${i})">🗑️</td>
+    `;
     tbody.appendChild(tr);
   });
 }
 
-/* salvar no localStorage */
-function salvar(){
-  localStorage.setItem('inventarioFerramentas', JSON.stringify(itens));
-  alert('Inventário salvo com sucesso!');
+function editar(i, c, v) {
+  itens[i] = itens[i] || [];
+  itens[i][c] = v;
+  // auto-save minor edits
+  localStorage.setItem("inventarioFerramentas", JSON.stringify(itens));
 }
 
-/* buscar por item (filtra pelas células) */
+function trocarEmprestado(i, v) {
+  itens[i] = itens[i] || [];
+  itens[i][2] = v;
+  if (v === "Sim") {
+    if (!itens[i][4]) itens[i][4] = new Date().toLocaleDateString("pt-BR");
+    itens[i][6] = "Não";
+  } else {
+    itens[i][4] = "";
+  }
+  salvar();
+  carregarTabela();
+}
+
+function marcarDevolvido(i, chk) {
+  itens[i] = itens[i] || [];
+  itens[i][6] = chk ? "Sim" : "Não";
+  itens[i][5] = chk ? new Date().toLocaleDateString("pt-BR") : "";
+  if (chk) {
+    itens[i][2] = "Não";
+    itens[i][4] = "";
+  }
+  salvar();
+  carregarTabela();
+}
+
 function buscarItem(){
-  const q = (document.getElementById('buscar').value || '').toLowerCase().trim();
-  const linhas = document.querySelectorAll('#tabela tbody tr');
-  linhas.forEach(tr=>{
-    const text = tr.innerText.toLowerCase();
-    tr.style.display = text.includes(q) ? '' : 'none';
+  let f = document.getElementById('buscar').value.toLowerCase();
+  document.querySelectorAll("#tabela tbody tr").forEach(tr=>{
+    tr.style.display = tr.innerText.toLowerCase().includes(f) ? "" : "none";
   });
 }
 
-/* toggle add form */
-function toggleAdd(){
-  const box = document.getElementById('addBox');
-  box.style.display = box.style.display === 'block' ? 'none' : 'block';
-  if(box.style.display === 'block'){
-    document.getElementById('novoItem').focus();
-  }
+/* adicionar peça via modal */
+function abrirModalAdd(){
+  carregarColaboradores(); // atualiza select
+  document.getElementById('modal').style.display = 'flex';
+  // pré-definir valores
+  document.getElementById('inpItem').value = "";
+  document.getElementById('inpQtd').value = "1";
+  document.getElementById('inpEmprestado').value = "Não";
+  document.getElementById('inpParaQuem').value = "";
 }
 
-/* adicionar item novo */
-function adicionarItem(){
-  const nome = (document.getElementById('novoItem').value || '').trim();
-  const qtd = parseInt(document.getElementById('novaQtd').value) || 1;
-  if(!nome){
-    alert('Preencha o nome da ferramenta.');
-    return;
-  }
-  itens.push([nome,qtd,"Não",""]);
-  montarTabela();
+function fecharModal(){
+  document.getElementById('modal').style.display = 'none';
+}
+
+function adicionarPeça(){
+  const nome = document.getElementById('inpItem').value.trim();
+  const qtd = document.getElementById('inpQtd').value || "1";
+  const emp = document.getElementById('inpEmprestado').value;
+  const para = document.getElementById('inpParaQuem').value || "";
+
+  if(!nome){ alert("Digite o nome do item."); return; }
+
+  const dataEmp = emp === "Sim" ? new Date().toLocaleDateString("pt-BR") : "";
+  const novo = [nome, qtd, emp, para, dataEmp, "", emp === "Sim" ? "Não" : "Não"];
+  itens.push(novo);
   salvar();
-  document.getElementById('novoItem').value = '';
-  document.getElementById('novaQtd').value = '';
-  toggleAdd();
+  carregarTabela();
+  fecharModal();
 }
 
-/* marcar como devolvido (limpa campos emprestado/para quem) para itens selecionados */
+/* marcar todos emprestados como devolvidos (exemplo de ação em massa) */
 function devolverSelecionados(){
-  const checks = document.querySelectorAll('#tabela tbody input[type="checkbox"]:checked');
-  if(checks.length === 0){
-    alert('Selecione ao menos um item para marcar como devolvido.');
-    return;
-  }
-  checks.forEach(c=>{
-    const id = parseInt(c.dataset.id,10);
-    if(!isNaN(id) && itens[id]){
-      itens[id][2] = "Não";
-      itens[id][3] = "";
+  let changed = false;
+  itens.forEach((it, idx) => {
+    if(it[2] === "Sim"){
+      itens[idx][2] = "Não";
+      itens[idx][6] = "Sim";
+      itens[idx][5] = new Date().toLocaleDateString("pt-BR");
+      itens[idx][4] = "";
+      changed = true;
     }
   });
-  montarTabela();
-  salvar();
-  alert('Itens marcados como devolvidos!');
+  if(changed) { salvar(); carregarTabela(); alert("Itens emprestados marcados como devolvidos."); }
+  else alert("Nenhum item marcado como emprestado.");
 }
 
-/* inicializa campos do formulário de adicionar dinamicamente no DOM */
-(function initAddForm(){
-  const container = document.getElementById('addBox');
-  container.innerHTML = `
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <input id="novoItem" placeholder="Nome da ferramenta" />
-      <input id="novaQtd" type="number" placeholder="Quantidade" style="width:140px" />
-    </div>
-    <div style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end">
-      <button class="action-btn btn-add" onclick="adicionarItem()">Adicionar</button>
-      <button class="action-btn" onclick="toggleAdd()">Cancelar</button>
-    </div>
-  `;
-})();
+/* export/import itens (JSON helpers kept but small buttons now call Excel) */
+function exportar(){
+  const data = JSON.stringify(itens, null, 2);
+  const blob = new Blob([data], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "inventarioFerramentas.json"; a.click(); URL.revokeObjectURL(url);
+}
 
-/* garantir que, se estiver logado antes, carregar dashboard (opcional) */
-window.addEventListener('DOMContentLoaded',()=>{
-  // nada por enquanto - espera login
+function importarPrompt(){
+  const json = prompt("Cole o JSON dos itens (substitui o inventário atual):");
+  try{
+    const parsed = JSON.parse(json);
+    if(Array.isArray(parsed)){
+      itens = parsed;
+      localStorage.setItem("inventarioFerramentas", JSON.stringify(itens));
+      carregarTabela();
+      alert("Importado!");
+    } else alert("JSON inválido.");
+  }catch(e){ alert("JSON inválido."); }
+}
+
+function limparItens(){
+  if(!confirm("Remover todos os itens do inventário?")) return;
+  itens = [];
+  salvar();
+  carregarTabela();
+}
+
+/* função remover item (lixeira) */
+function removerItem(i){
+  if(!confirm("Excluir item?")) return;
+  itens.splice(i,1);
+  salvar();
+  carregarTabela();
+}
+
+/* -----------------------
+   COLABORADORES
+   ----------------------- */
+
+function salvarColaborador(){
+  const nome = document.getElementById('colabNome').value.trim();
+  const area = document.getElementById('colabArea').value.trim();
+  const fotoInput = document.getElementById('colabFoto');
+
+  if(!nome){ alert("Digite o nome do colaborador."); return; }
+
+  if(fotoInput.files && fotoInput.files[0]){
+    const reader = new FileReader();
+    reader.onload = function(e){
+      colaboradores.push({name: nome, photo: e.target.result, area: area});
+      persistColabs();
+      limparFormColab();
+      carregarColaboradores();
+    };
+    reader.readAsDataURL(fotoInput.files[0]);
+  } else {
+    colaboradores.push({name: nome, photo: "", area: area});
+    persistColabs();
+    limparFormColab();
+    carregarColaboradores();
+  }
+}
+
+function persistColabs(){
+  localStorage.setItem("colaboradoresSistema", JSON.stringify(colaboradores));
+}
+
+function carregarColaboradores(){
+  colaboradores = JSON.parse(localStorage.getItem("colaboradoresSistema") || "[]");
+  // preencher lista visual
+  const lista = document.getElementById('colaboradoresLista');
+  if(lista){
+    lista.innerHTML = "";
+    colaboradores.forEach((c, i) => {
+      const div = document.createElement('div');
+      div.className = 'col-item';
+      div.innerHTML = `
+        <img src="${c.photo || ''}" alt="foto" onerror="this.style.display='none'">
+        <div>
+          <div style="font-weight:700">${c.name}</div>
+          <div style="color:var(--muted);font-size:13px">${c.area || ''}</div>
+        </div>
+        <div class="col-actions">
+          <button class="small-btn btn-muted" onclick="editarColab(${i})">Editar</button>
+          <button class="small-btn btn-danger" onclick="removerColab(${i})">Remover</button>
+        </div>
+      `;
+      lista.appendChild(div);
+    });
+  }
+
+  // preencher selects "Para quem?" nos formulários (modal)
+  const sel = document.getElementById('inpParaQuem');
+  if(sel){
+    sel.innerHTML = `<option value=""></option>`;
+    colaboradores.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.name;
+      opt.text = c.name + (c.area ? (" — " + c.area) : "");
+      sel.appendChild(opt);
+    });
+  }
+}
+
+function limparFormColab(){
+  document.getElementById('colabNome').value = "";
+  document.getElementById('colabArea').value = "";
+  document.getElementById('colabFoto').value = "";
+}
+
+function removerColab(i){
+  if(!confirm("Remover colaborador?")) return;
+  colaboradores.splice(i,1);
+  persistColabs();
+  carregarColaboradores();
+}
+
+function editarColab(i){
+  const c = colaboradores[i];
+  const novoNome = prompt("Nome:", c.name);
+  if(novoNome === null) return;
+  const novaArea = prompt("Área:", c.area || "");
+  if(novaArea === null) return;
+  colaboradores[i].name = novoNome.trim();
+  colaboradores[i].area = novaArea.trim();
+  persistColabs();
+  carregarColaboradores();
+}
+
+/* export/import colaboradores (JSON helpers left as-is) */
+function exportarColabs(){
+  const data = JSON.stringify(colaboradores, null, 2);
+  const blob = new Blob([data], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "colaboradoresFerramentas.json"; a.click(); URL.revokeObjectURL(url);
+}
+
+function importarColabsPrompt(){
+  const json = prompt("Cole o JSON dos colaboradores (substitui o atual):");
+  try{
+    const parsed = JSON.parse(json);
+    if(Array.isArray(parsed)){
+      colaboradores = parsed;
+      persistColabs();
+      carregarColaboradores();
+      alert("Importado!");
+    } else alert("JSON inválido.");
+  }catch(e){ alert("JSON inválido."); }
+}
+
+function limparColabs(){
+  if(!confirm("Remover todos os colaboradores?")) return;
+  colaboradores = [];
+  persistColabs();
+  carregarColaboradores();
+}
+
+/* exportar tudo (itens + colaboradores) JSON helper */
+function exportarTudo(){
+  const data = {
+    itens: itens,
+    colaboradores: colaboradores
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "backup_inventario_colaboradores.json"; a.click(); URL.revokeObjectURL(url);
+}
+
+/* ========================
+   EXCEL (SheetJS) FUNCTIONS
+   - exportarExcel() -> cria 2 abas: 'Itens' and 'Colaboradores'
+   - triggerImport() -> dispara o input hidden
+   - importFromFile(files) -> lê o arquivo xlsx e atualiza itens & colaboradores
+   ======================== */
+
+function exportarExcel(){
+  // Items sheet: Item, Qtd, Emprestado, ParaQuem, DataEmp, DataDev, Devolvido
+  const itemsRows = itens.map(r => ({
+    Item: r[0] ?? "",
+    Qtd: r[1] ?? "",
+    Emprestado: r[2] ?? "",
+    ParaQuem: r[3] ?? "",
+    DataEmp: r[4] ?? "",
+    DataDev: r[5] ?? "",
+    Devolvido: r[6] ?? ""
+  }));
+
+  // Colaboradores sheet: Nome, Area, Photo (base64)
+  const colabsRows = colaboradores.map(c => ({
+    Nome: c.name ?? "",
+    Area: c.area ?? "",
+    Photo: c.photo ?? ""
+  }));
+
+  const wb = XLSX.utils.book_new();
+  const ws1 = XLSX.utils.json_to_sheet(itemsRows);
+  XLSX.utils.book_append_sheet(wb, ws1, "Itens");
+
+  const ws2 = XLSX.utils.json_to_sheet(colabsRows);
+  XLSX.utils.book_append_sheet(wb, ws2, "Colaboradores");
+
+  // Write file
+  XLSX.writeFile(wb, "inventario_e_colaboradores.xlsx");
+}
+
+function triggerImport(){
+  const inp = document.getElementById('importExcelFile');
+  inp.value = null;
+  inp.click();
+  inp.onchange = function(){ importFromFile(this.files); };
+}
+
+function importFromFile(files){
+  if(!files || !files.length) return;
+  const file = files[0];
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:'array'});
+
+      // Import Itens sheet if exists
+      if(wb.SheetNames.includes("Itens")){
+        const sheet = wb.Sheets["Itens"];
+        const arr = XLSX.utils.sheet_to_json(sheet, {defval:""});
+        // Map rows to itens format [nome,qtd,emprestado,paraquem,dataEmp,dataDev,devolvido]
+        const importedItems = arr.map(row => [
+          row.Item ?? "",
+          row.Qtd ?? "",
+          row.Emprestado ?? "",
+          row.ParaQuem ?? "",
+          row.DataEmp ?? "",
+          row.DataDev ?? "",
+          row.Devolvido ?? ""
+        ]);
+        // Replace current itens if user confirms
+        if(confirm("Substituir itens atuais pelos itens do arquivo Excel? (Cancelar = ignorar importação de itens)")){
+          itens = importedItems;
+          localStorage.setItem("inventarioFerramentas", JSON.stringify(itens));
+        }
+      }
+
+      // Import Colaboradores sheet if exists
+      if(wb.SheetNames.includes("Colaboradores")){
+        const sheet2 = wb.Sheets["Colaboradores"];
+        const arr2 = XLSX.utils.sheet_to_json(sheet2, {defval:""});
+        const importedColabs = arr2.map(row => ({
+          name: row.Nome ?? "",
+          area: row.Area ?? "",
+          photo: row.Photo ?? ""
+        }));
+        if(confirm("Substituir colaboradores atuais pelos colaboradores do arquivo Excel? (Cancelar = ignorar importação de colaboradores)")){
+          colaboradores = importedColabs;
+          localStorage.setItem("colaboradoresSistema", JSON.stringify(colaboradores));
+        }
+      }
+
+      // Refresh UI
+      carregarColaboradores();
+      carregarTabela();
+      alert("Importação concluída (verifique se substituiu listas quando solicitado).");
+    }catch(err){
+      console.error(err);
+      alert("Erro ao importar Excel. Verifique o arquivo.");
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+/* Inicialização */
+document.addEventListener('DOMContentLoaded', ()=>{
+  carregarColaboradores();
+  carregarTabela();
 });
 </script>
 </body>
 </html>
+
